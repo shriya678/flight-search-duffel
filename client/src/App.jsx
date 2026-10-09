@@ -1,6 +1,11 @@
+import { useState } from 'react';
 import Header from './components/Header.jsx';
+import SearchForm from './components/SearchForm.jsx';
 
 export default function App() {
+  // Temporary: shows the submitted search until the Duffel API is wired up.
+  const [lastSearch, setLastSearch] = useState(null);
+
   return (
     <>
       <Header />
@@ -14,8 +19,11 @@ export default function App() {
             <div className="tabs">
               <button type="button" className="tab active">Flights</button>
             </div>
-            <div className="card-body">Search form coming soon.</div>
+            <div className="card-body">
+              <SearchForm onSearch={setLastSearch} />
+            </div>
           </div>
+          {lastSearch && <pre className="debug">{JSON.stringify(lastSearch, null, 2)}</pre>}
         </div>
       </main>
     </>
