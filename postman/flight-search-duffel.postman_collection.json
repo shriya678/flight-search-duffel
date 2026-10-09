@@ -1,0 +1,398 @@
+{
+  "info": {
+    "name": "Flight Search (Duffel) API",
+    "description": "Tests for the Express API in server/. Start the server with `npm run dev` (or `npm start --prefix server`), then run the whole collection with the Collection Runner.\n\nDates are generated automatically before each request: departure = today + 30 days, return = today + 37 days.\n\nThe Duffel token lives only in server/.env. Postman never sees it.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:5000" }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "const isoDaysFromNow = (days) => {",
+          "  const d = new Date();",
+          "  d.setDate(d.getDate() + days);",
+          "  return d.toISOString().slice(0, 10);",
+          "};",
+          "pm.collectionVariables.set('departureDate', isoDaysFromNow(30));",
+          "pm.collectionVariables.set('returnDate', isoDaysFromNow(37));",
+          "pm.collectionVariables.set('beforeDepartureDate', isoDaysFromNow(25));",
+          "pm.collectionVariables.set('pastDate', isoDaysFromNow(-5));"
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "pm.test('Responds with JSON', () => {",
+          "  pm.response.to.have.header('Content-Type');",
+          "  pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json');",
+          "});"
+        ]
+      }
+    }
+  ],
+  "item": [
+    {
+      "name": "1. Health",
+      "item": [
+        {
+          "name": "Health check",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/health"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Server is up and Duffel token is configured', () => {",
+                  "  const body = pm.response.json();",
+                  "  pm.expect(body.ok).to.eql(true);",
+                  "  pm.expect(body.duffelConfigured, 'Set DUFFEL_ACCESS_TOKEN in server/.env').to.eql(true);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "2. Search - success",
+      "item": [
+        {
+          "name": "One-way DEL to BOM, 1 adult, economy",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/api/flights/search",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tripType\": \"one-way\",\n  \"origin\": \"DEL\",\n  \"destination\": \"BOM\",\n  \"departureDate\": \"{{departureDate}}\",\n  \"passengers\": { \"adults\": 1, \"children\": 0, \"infants\": 0 },\n  \"cabinClass\": \"economy\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Has offers', () => {",
+                  "  pm.expect(body.offerRequestId).to.match(/^orq_/);",
+                  "  pm.expect(body.offers).to.be.an('array').that.is.not.empty;",
+                  "  pm.expect(body.offers.length).to.be.at.most(50);",
+                  "  pm.expect(body.totalOffers).to.be.at.least(body.offers.length);",
+                  "});",
+                  "pm.test('Offers are sorted by price, cheapest first', () => {",
+                  "  const prices = body.offers.map((o) => Number(o.totalAmount));",
+                  "  pm.expect(prices).to.eql([...prices].sort((a, b) => a - b));",
+                  "});",
+                  "pm.test('Offer has the expected shape', () => {",
+                  "  const offer = body.offers[0];",
+                  "  pm.expect(offer).to.include.keys('id', 'totalAmount', 'totalCurrency', 'airline', 'slices');",
+                  "  pm.expect(offer.airline).to.include.keys('name', 'iataCode', 'logoUrl');",
+                  "  const slice = offer.slices[0];",
+                  "  pm.expect(slice).to.include.keys('origin', 'destination', 'duration', 'stops', 'departingAt', 'arrivingAt', 'segments');",
+                  "  pm.expect(slice.segments[0]).to.include.keys('flightNumber', 'carrier', 'origin', 'destination', 'departingAt', 'arrivingAt');",
+                  "});",
+                  "pm.test('Every offer is a single slice DEL to BOM', () => {",
+                  "  body.offers.forEach((o) => {",
+                  "    pm.expect(o.slices).to.have.lengthOf(1);",
+                  "    pm.expect(o.slices[0].origin.iataCode).to.eql('DEL');",
+                  "    pm.expect(o.slices[0].destination.iataCode).to.eql('BOM');",
+                  "    pm.expect(o.slices[0].departingAt.slice(0, 10)).to.eql(pm.collectionVariables.get('departureDate'));",
+                  "  });",
+                  "});",
+                  "pm.test('Stops match segment count', () => {",
+                  "  body.offers.forEach((o) => o.slices.forEach((s) => pm.expect(s.stops).to.eql(s.segments.length - 1)));",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Round trip LHR to JFK, 2 adults + 1 child + 1 infant, business",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/api/flights/search",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tripType\": \"round-trip\",\n  \"origin\": \"LHR\",\n  \"destination\": \"JFK\",\n  \"departureDate\": \"{{departureDate}}\",\n  \"returnDate\": \"{{returnDate}}\",\n  \"passengers\": { \"adults\": 2, \"children\": 1, \"infants\": 1 },\n  \"cabinClass\": \"business\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Returns at most 50 offers', () => {",
+                  "  pm.expect(body.offers).to.be.an('array').that.is.not.empty;",
+                  "  pm.expect(body.offers.length).to.be.at.most(50);",
+                  "});",
+                  "pm.test('Each offer has an outbound and a return slice', () => {",
+                  "  body.offers.forEach((o) => {",
+                  "    pm.expect(o.slices).to.have.lengthOf(2);",
+                  "    pm.expect(o.slices[0].origin.iataCode).to.eql('LHR');",
+                  "    pm.expect(o.slices[1].origin.iataCode).to.eql('JFK');",
+                  "    pm.expect(o.slices[1].departingAt.slice(0, 10)).to.eql(pm.collectionVariables.get('returnDate'));",
+                  "  });",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Lowercase airport codes are accepted",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/api/flights/search",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"origin\": \"blr\",\n  \"destination\": \"del\",\n  \"departureDate\": \"{{departureDate}}\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200 (defaults: one-way, 1 adult, economy)', () => pm.response.to.have.status(200));",
+                  "pm.test('Codes were uppercased', () => {",
+                  "  const slice = pm.response.json().offers[0].slices[0];",
+                  "  pm.expect(slice.origin.iataCode).to.eql('BLR');",
+                  "  pm.expect(slice.destination.iataCode).to.eql('DEL');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "3. Search - validation errors (400)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status is 400', () => pm.response.to.have.status(400));",
+              "pm.test('Has an error message', () => pm.expect(pm.response.json().error).to.be.a('string'));"
+            ]
+          }
+        }
+      ],
+      "item": [
+        {
+          "name": "Missing destination",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/api/flights/search",
+            "body": { "mode": "raw", "raw": "{\n  \"origin\": \"DEL\",\n  \"departureDate\": \"{{departureDate}}\"\n}" }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Flags destination', () => pm.expect(pm.response.json().fields).to.have.property('destination'));"
+          ] } }]
+        },
+        {
+          "name": "Invalid airport code format (2 letters)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/api/flights/search",
+            "body": { "mode": "raw", "raw": "{\n  \"origin\": \"DE\",\n  \"destination\": \"BOM\",\n  \"departureDate\": \"{{departureDate}}\"\n}" }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Flags origin', () => pm.expect(pm.response.json().fields.origin).to.include('3-letter'));"
+          ] } }]
+        },
+        {
+          "name": "Same origin and destination",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/api/flights/search",
+            "body": { "mode": "raw", "raw": "{\n  \"origin\": \"DEL\",\n  \"destination\": \"DEL\",\n  \"departureDate\": \"{{departureDate}}\"\n}" }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Flags destination', () => pm.expect(pm.response.json().fields.destination).to.include('differ'));"
+          ] } }]
+        },
+        {
+          "name": "Departure date in the past",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/api/flights/search",
+            "body": { "mode": "raw", "raw": "{\n  \"origin\": \"DEL\",\n  \"destination\": \"BOM\",\n  \"departureDate\": \"{{pastDate}}\"\n}" }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Flags departureDate', () => pm.expect(pm.response.json().fields.departureDate).to.include('past'));"
+          ] } }]
+        },
+        {
+          "name": "Invalid date format",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/api/flights/search",
+            "body": { "mode": "raw", "raw": "{\n  \"origin\": \"DEL\",\n  \"destination\": \"BOM\",\n  \"departureDate\": \"10/10/2026\"\n}" }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Flags departureDate', () => pm.expect(pm.response.json().fields.departureDate).to.include('YYYY-MM-DD'));"
+          ] } }]
+        },
+        {
+          "name": "Round trip without returnDate",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/api/flights/search",
+            "body": { "mode": "raw", "raw": "{\n  \"tripType\": \"round-trip\",\n  \"origin\": \"DEL\",\n  \"destination\": \"BOM\",\n  \"departureDate\": \"{{departureDate}}\"\n}" }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Flags returnDate', () => pm.expect(pm.response.json().fields).to.have.property('returnDate'));"
+          ] } }]
+        },
+        {
+          "name": "Return date before departure",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/api/flights/search",
+            "body": { "mode": "raw", "raw": "{\n  \"tripType\": \"round-trip\",\n  \"origin\": \"DEL\",\n  \"destination\": \"BOM\",\n  \"departureDate\": \"{{departureDate}}\",\n  \"returnDate\": \"{{beforeDepartureDate}}\"\n}" }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Flags returnDate', () => pm.expect(pm.response.json().fields.returnDate).to.include('after'));"
+          ] } }]
+        },
+        {
+          "name": "Zero adults",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/api/flights/search",
+            "body": { "mode": "raw", "raw": "{\n  \"origin\": \"DEL\",\n  \"destination\": \"BOM\",\n  \"departureDate\": \"{{departureDate}}\",\n  \"passengers\": { \"adults\": 0, \"children\": 1, \"infants\": 0 }\n}" }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Flags passengers', () => pm.expect(pm.response.json().fields).to.have.property('passengers'));"
+          ] } }]
+        },
+        {
+          "name": "More infants than adults",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/api/flights/search",
+            "body": { "mode": "raw", "raw": "{\n  \"origin\": \"DEL\",\n  \"destination\": \"BOM\",\n  \"departureDate\": \"{{departureDate}}\",\n  \"passengers\": { \"adults\": 1, \"children\": 0, \"infants\": 2 }\n}" }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Flags passengers', () => pm.expect(pm.response.json().fields.passengers).to.include('infants'));"
+          ] } }]
+        },
+        {
+          "name": "More than 9 passengers",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/api/flights/search",
+            "body": { "mode": "raw", "raw": "{\n  \"origin\": \"DEL\",\n  \"destination\": \"BOM\",\n  \"departureDate\": \"{{departureDate}}\",\n  \"passengers\": { \"adults\": 6, \"children\": 4, \"infants\": 0 }\n}" }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Flags passengers', () => pm.expect(pm.response.json().fields.passengers).to.include('Maximum'));"
+          ] } }]
+        },
+        {
+          "name": "Invalid cabin class",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/api/flights/search",
+            "body": { "mode": "raw", "raw": "{\n  \"origin\": \"DEL\",\n  \"destination\": \"BOM\",\n  \"departureDate\": \"{{departureDate}}\",\n  \"cabinClass\": \"luxury\"\n}" }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Flags cabinClass', () => pm.expect(pm.response.json().fields).to.have.property('cabinClass'));"
+          ] } }]
+        },
+        {
+          "name": "Invalid trip type",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/api/flights/search",
+            "body": { "mode": "raw", "raw": "{\n  \"tripType\": \"multi-city\",\n  \"origin\": \"DEL\",\n  \"destination\": \"BOM\",\n  \"departureDate\": \"{{departureDate}}\"\n}" }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Flags tripType', () => pm.expect(pm.response.json().fields).to.have.property('tripType'));"
+          ] } }]
+        },
+        {
+          "name": "Malformed JSON body",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/api/flights/search",
+            "body": { "mode": "raw", "raw": "{ \"origin\": \"DEL\", " }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Says body must be JSON', () => pm.expect(pm.response.json().error).to.include('valid JSON'));"
+          ] } }]
+        }
+      ]
+    },
+    {
+      "name": "4. Duffel and routing errors",
+      "item": [
+        {
+          "name": "Unknown airport code (rejected by Duffel)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/api/flights/search",
+            "body": { "mode": "raw", "raw": "{\n  \"origin\": \"ZZZ\",\n  \"destination\": \"BOM\",\n  \"departureDate\": \"{{departureDate}}\"\n}" }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Status is 422 (passed through from Duffel)', () => pm.response.to.have.status(422));",
+            "pm.test('Includes Duffel error details', () => {",
+            "  const body = pm.response.json();",
+            "  pm.expect(body.error).to.include('IATA');",
+            "  pm.expect(body.details[0].code).to.eql('invalid_iata_code');",
+            "});"
+          ] } }]
+        },
+        {
+          "name": "Unknown API route",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/does-not-exist"
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Status is 404', () => pm.response.to.have.status(404));"
+          ] } }]
+        }
+      ]
+    }
+  ]
+}
