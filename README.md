@@ -2,6 +2,10 @@
 
 An IndiGo-style flight search form built with **React (Vite)** and a small **Node (Express)** API that fetches live offers from the [Duffel API](https://duffel.com/docs).
 
+**Live demo:** https://flight-search-duffel.vercel.app ([API health check](https://flight-search-duffel.vercel.app/api/health))
+
+> Runs on a Duffel **test** token, so airlines and prices are simulated. Try DEL → BOM or LHR → JFK.
+
 ```
 flight-search-duffel/
 ├── client/   React + Vite frontend (proxies /api to the server in dev)
@@ -103,6 +107,9 @@ From the command line:
 
 ```bash
 npx newman run postman/flight-search-duffel.postman_collection.json
+
+# against the live deployment
+npx newman run postman/flight-search-duffel.postman_collection.json --env-var baseUrl=https://flight-search-duffel.vercel.app
 ```
 
 Browser test cases are in [TESTING.md](TESTING.md).
