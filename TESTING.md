@@ -71,3 +71,34 @@ Run `npm run dev` and open http://localhost:5173. Use Chrome DevTools (F12) wher
 | F3 | Before submitting, type a bad value | No error shown yet (errors appear only after the first submit) |
 | F4 | After a failed submit, fix the field | The error clears as you type |
 | F5 | Fill every field correctly, press Enter in the To field | Form submits (same as clicking Search) |
+
+### G. Search results
+
+Prices are in your Duffel account's currency (GBP for most test accounts). Airlines are simulated in test mode.
+
+| # | Steps | Expected |
+| --- | --- | --- |
+| G1 | One Way, DEL → BOM, a date ~30 days ahead, Search | Button shows "Searching…" and is disabled; 3 shimmering placeholder cards appear |
+| G2 | Wait for G1 to finish | "N flights found" heading and a list of cards, cheapest first |
+| G3 | Check the Network tab during G1 | One `POST /api/flights/search` to localhost; **no** request to `api.duffel.com`, no `Authorization` header |
+| G4 | Look at a result card | Airline logo + name, departure/arrival time, airport codes, dates, duration (e.g. "2h 5m"), stops, flight number(s), price |
+| G5 | Find a non-stop flight | "Non-stop" shown in green |
+| G6 | Find a flight with stops | "1 stop via XXX" with the connecting airport |
+| G7 | Find an overnight flight (arrival next day) | Red "+1" next to the arrival time |
+| G8 | Round Trip LHR → JFK, return a week later | Each card has "Outbound" and "Return" rows; heading says "showing the 50 cheapest" |
+| G9 | Sort by "Fastest" | Cards reorder by total flight time |
+| G10 | Sort by "Earliest departure" | Cards reorder by outbound departure time |
+| G11 | Sort back to "Cheapest" | Cards are in ascending price order |
+| G12 | 2 adults + 1 child, Business, Search | Prices are higher than for 1 adult economy (price is the total for all passengers) |
+| G13 | Run a second search with a different route | The old results are replaced by loading cards, then the new results |
+| G14 | Resize to mobile width with results shown | Cards stack: airline, then flight rows, then price; no horizontal scroll |
+
+### H. Errors
+
+| # | Steps | Expected |
+| --- | --- | --- |
+| H1 | Search From = `ZZZ`, To = BOM | Red error message from Duffel about an invalid IATA code, plus a "Try again" button |
+| H2 | Stop the server (Ctrl+C), then Search | "The flight server is not responding. Is it running?" |
+| H3 | Restart the server, click "Try again" | The same search runs again and results appear |
+| H4 | Put a wrong token in `server/.env`, restart, Search | Error message shown (Duffel auth error), the app doesn't crash |
+| H5 | DevTools → Network → throttling "Slow 4G", Search | Loading state stays visible until results arrive |
