@@ -2,7 +2,6 @@
   "name": "flight-search-duffel",
   "private": true,
   "version": "0.1.0",
-  "type": "module",
   "description": "IndiGo-style flight search form backed by the Duffel API",
   "scripts": {
     "install:all": "npm install && cd server && npm install && cd ../client && npm install",

@@ -4,7 +4,7 @@ import flightsRouter from './routes/flights.js';
 import placesRouter from './routes/places.js';
 
 // Builds the Express app without starting it, so it can run both as a local
-// server (index.js) and as a Vercel serverless function (api/index.js).
+// server (index.js) and as the Vercel "api" service (see vercel.json).
 const app = express();
 
 app.use(express.json());

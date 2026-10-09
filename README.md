@@ -38,23 +38,23 @@ npm run dev
 
 ## Deployment (Vercel)
 
-The frontend and backend deploy together as **one Vercel project**:
+The frontend and backend deploy together as **one Vercel project** using [Vercel Services](https://vercel.com/docs/services), which are defined in `vercel.json`:
 
 ```
-https://<project>.vercel.app/          → React build (client/dist)
-https://<project>.vercel.app/api/*     → Express app as a serverless function (api/index.js)
+https://<project>.vercel.app/          → "web" service: client/ (Vite build)
+https://<project>.vercel.app/api/*     → "api" service: server/ (Express, server/src/app.js)
 ```
 
 Both are on the same domain, so no CORS setup is needed, and the Duffel token is a Vercel environment variable that never reaches the browser.
 
 How it fits together:
-- `server/src/app.js` builds the Express app. `server/src/index.js` starts it locally; `api/index.js` exports it for Vercel.
-- `vercel.json` sets the install/build commands and output folder, and sends all `/api/*` requests to the function.
+- `server/src/app.js` builds the Express app. Locally `server/src/index.js` starts it; on Vercel it is the `api` service entrypoint.
+- Top-level rewrites send `/api/*` to `api` and everything else to `web`. The service receives the original path (`/api/flights/search`), so the Express routes are the same in both places.
 - Only the `main` branch deploys (`git.deploymentEnabled`); feature branches and PRs don't create deployments.
 
 Steps (one time):
 1. Go to https://vercel.com/new and import the `flight-search-duffel` GitHub repo.
-2. Leave **Root Directory** as `./` and **Framework Preset** as **Other**. `vercel.json` supplies the build settings.
+2. Vercel detects the services from `vercel.json`. Keep the root directory as the repo root.
 3. Under **Environment Variables**, add `DUFFEL_ACCESS_TOKEN` = your `duffel_test_...` token.
 4. Click **Deploy**, then open `https://<project>.vercel.app/api/health` and check `"duffelConfigured": true`.
 
