@@ -1,10 +1,19 @@
 import { useState } from 'react';
+import AirportInput from './AirportInput.jsx';
 import PassengerSelector from './PassengerSelector.jsx';
 import { todayISO, validateSearch } from '../utils/validation.js';
 
+const DEFAULT_ORIGIN = {
+  type: 'airport',
+  iataCode: 'DEL',
+  name: 'Indira Gandhi International Airport',
+  cityName: 'New Delhi',
+  countryCode: 'IN',
+};
+
 const INITIAL_SEARCH = {
   tripType: 'one-way',
-  origin: 'DEL',
+  origin: DEFAULT_ORIGIN.iataCode,
   destination: '',
   departureDate: todayISO(),
   returnDate: '',
@@ -21,6 +30,8 @@ export default function SearchForm({ onSearch, loading = false }) {
   const [search, setSearch] = useState(INITIAL_SEARCH);
   const [errors, setErrors] = useState({});
   const [submitted, setSubmitted] = useState(false);
+  // Display details (city, airport name) for the selected codes; the search itself only needs the codes.
+  const [places, setPlaces] = useState({ origin: DEFAULT_ORIGIN, destination: null });
 
   const update = (patch) => {
     const next = { ...search, ...patch };
@@ -29,9 +40,15 @@ export default function SearchForm({ onSearch, loading = false }) {
     if (submitted) setErrors(validateSearch(next));
   };
 
-  const toAirportCode = (value) => value.toUpperCase().replace(/[^A-Z]/g, '').slice(0, 3);
+  const selectAirport = (field, code, place) => {
+    update({ [field]: code });
+    setPlaces((prev) => ({ ...prev, [field]: place }));
+  };
 
-  const swap = () => update({ origin: search.destination, destination: search.origin });
+  const swap = () => {
+    update({ origin: search.destination, destination: search.origin });
+    setPlaces(({ origin, destination }) => ({ origin: destination, destination: origin }));
+  };
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -62,33 +79,27 @@ export default function SearchForm({ onSearch, loading = false }) {
 
       <div className="fields">
         <div className="route">
-          <label className={`field ${errors.origin ? 'has-error' : ''}`}>
-            <span className="field-label">From</span>
-            <input
-              className="field-input"
-              value={search.origin}
-              onChange={(e) => update({ origin: toAirportCode(e.target.value) })}
-              placeholder="e.g. DEL"
-              autoComplete="off"
-            />
-            {errors.origin && <span className="field-error">{errors.origin}</span>}
-          </label>
+          <AirportInput
+            label="From"
+            value={search.origin}
+            place={places.origin}
+            onSelect={(origin, place) => selectAirport('origin', origin, place)}
+            placeholder="City or airport"
+            error={errors.origin}
+          />
 
           <button type="button" className="swap" onClick={swap} aria-label="Swap origin and destination">
             ⇄
           </button>
 
-          <label className={`field ${errors.destination ? 'has-error' : ''}`}>
-            <span className="field-label">To</span>
-            <input
-              className="field-input"
-              value={search.destination}
-              onChange={(e) => update({ destination: toAirportCode(e.target.value) })}
-              placeholder="Going to?"
-              autoComplete="off"
-            />
-            {errors.destination && <span className="field-error">{errors.destination}</span>}
-          </label>
+          <AirportInput
+            label="To"
+            value={search.destination}
+            place={places.destination}
+            onSelect={(destination, place) => selectAirport('destination', destination, place)}
+            placeholder="Going to?"
+            error={errors.destination}
+          />
         </div>
 
         <label className={`field ${errors.departureDate ? 'has-error' : ''}`}>

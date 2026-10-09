@@ -61,6 +61,16 @@ Only `origin`, `destination` and `departureDate` are required. The others defaul
 | 422 | Duffel rejected the search, e.g. an unknown airport code |
 | 502 / 504 | Duffel token is invalid or unreachable / Duffel timed out |
 
+### `GET /api/places?query=mum`
+
+Airport and city suggestions for the From/To autocomplete (up to 8). `query` must be 2-50 characters.
+
+```json
+{ "places": [{ "type": "airport", "iataCode": "BOM", "name": "Chhatrapati Shivaji International Airport", "cityName": "Mumbai", "countryCode": "IN" }] }
+```
+
+City codes such as `LON` (all London airports) can be used as `origin` / `destination` in a flight search.
+
 ### Postman
 
 Import [`postman/flight-search-duffel.postman_collection.json`](postman/flight-search-duffel.postman_collection.json), start the server, and run the collection with the Collection Runner. Dates are generated automatically.

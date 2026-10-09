@@ -30,12 +30,29 @@ Run `npm run dev` and open http://localhost:5173. Use Chrome DevTools (F12) wher
 
 | # | Steps | Expected |
 | --- | --- | --- |
-| C1 | Load the page | From = DEL, To is empty with the placeholder "Going to?" |
-| C2 | Type `bom` in To | Shows `BOM` (uppercased) |
-| C3 | Type `b0m-1x` in To | Digits and symbols are removed |
-| C4 | Type `BOMBAY` in To | Stops at 3 letters: `BOM` |
-| C5 | Fill From=DEL, To=BOM, click ⇄ | From=BOM, To=DEL |
+| C1 | Load the page | From = DEL with "New Delhi · Indira Gandhi International Airport" below; To is empty with the placeholder "Going to?" |
+| C2 | Type `mumbai` in To | A dropdown lists Mumbai (BOM) and Navi Mumbai (NMI) |
+| C3 | Click "Mumbai … BOM" | To shows `BOM` with "Mumbai · Chhatrapati Shivaji International Airport" below; dropdown closes |
+| C4 | Type `bom` in To and click outside without picking | To keeps `BOM` (an exact 3-letter code is accepted), no airport name shown |
+| C5 | Fill From=DEL, To=BOM (picked from the list), click ⇄ | Codes **and** airport names swap |
 | C6 | Click ⇄ with To empty | From becomes empty, To becomes DEL |
+
+### C+. Airport autocomplete
+
+| # | Steps | Expected |
+| --- | --- | --- |
+| C7 | Click into From | Text is selected so you can type over it; no dropdown yet |
+| C8 | Type one letter `l` | No dropdown (minimum 2 characters) |
+| C9 | Type `lon` | "Searching…" briefly, then London "All airports" (LON) plus London airports such as LHR, STN, LTN |
+| C10 | Type quickly `l-o-n-d-o-n` and watch the Network tab | Only 1-2 `/api/places` requests, not one per key (requests are debounced) |
+| C11 | Use ↓ / ↑ on the list | Highlight moves and wraps from last to first |
+| C12 | Highlight an item and press Enter | That airport is picked; the form is **not** submitted |
+| C13 | With the list open, press Escape | List closes; typing again reopens it |
+| C14 | Type `zzzzqq` | "No airports found" |
+| C15 | Type `mumbai`, click outside without picking, then click Search | "Pick an airport from the list" under that field |
+| C16 | Pick London (LON) → New Delhi (DEL), Search | Results depart from different London airports (LHR, LGW…) |
+| C17 | Stop the server, type `mum` | "Couldn't load suggestions. Type a 3-letter code." |
+| C18 | Hover over a suggestion, then click it | Hovered row is highlighted; clicking picks it |
 
 ### D. Dates
 

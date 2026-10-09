@@ -12,8 +12,8 @@ export function validateSearch(search) {
   const errors = {};
   const { tripType, origin, destination, departureDate, returnDate, passengers } = search;
 
-  if (!IATA_CODE.test(origin)) errors.origin = 'Enter a 3-letter airport code';
-  if (!IATA_CODE.test(destination)) errors.destination = 'Enter a 3-letter airport code';
+  if (!IATA_CODE.test(origin)) errors.origin = 'Pick an airport from the list';
+  if (!IATA_CODE.test(destination)) errors.destination = 'Pick an airport from the list';
   if (!errors.origin && !errors.destination && origin === destination) {
     errors.destination = 'Destination must differ from origin';
   }
