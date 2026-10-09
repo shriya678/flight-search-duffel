@@ -119,3 +119,17 @@ Prices are in your Duffel account's currency (GBP for most test accounts). Airli
 | H3 | Restart the server, click "Try again" | The same search runs again and results appear |
 | H4 | Put a wrong token in `server/.env`, restart, Search | Error message shown (Duffel auth error), the app doesn't crash |
 | H5 | DevTools → Network → throttling "Slow 4G", Search | Loading state stays visible until results arrive |
+
+### I. Deployed site (Vercel)
+
+Run these on `https://<project>.vercel.app` after deploying.
+
+| # | Steps | Expected |
+| --- | --- | --- |
+| I1 | Open `/api/health` | `{"ok":true,"duffelConfigured":true}` |
+| I2 | Open the site and search DEL → BOM | Results load (the first search may take a second or two longer) |
+| I3 | DevTools → Network during a search | Requests go to the same domain under `/api`; nothing to `api.duffel.com` |
+| I4 | DevTools → Sources, search the JS bundle for `duffel_` | Not found; the token is not in the frontend |
+| I5 | Type `mumbai` in To | Airport suggestions appear |
+| I6 | Run the Postman collection with `baseUrl` set to the Vercel URL | All tests pass |
+| I7 | Push a commit to a feature branch | No new Vercel deployment is created; only `main` deploys |
