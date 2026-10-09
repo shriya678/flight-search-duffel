@@ -363,7 +363,98 @@
       ]
     },
     {
-      "name": "4. Duffel and routing errors",
+      "name": "4. Airport suggestions",
+      "item": [
+        {
+          "name": "Search by city name (mumbai)",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/places?query=mumbai"
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "const { places } = pm.response.json();",
+            "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+            "pm.test('Returns at most 8 places with the expected shape', () => {",
+            "  pm.expect(places).to.be.an('array').that.is.not.empty;",
+            "  pm.expect(places.length).to.be.at.most(8);",
+            "  places.forEach((p) => {",
+            "    pm.expect(p).to.include.keys('type', 'iataCode', 'name', 'cityName', 'countryCode');",
+            "    pm.expect(p.iataCode).to.match(/^[A-Z]{3}$/);",
+            "  });",
+            "});",
+            "pm.test('Includes BOM', () => pm.expect(places.map((p) => p.iataCode)).to.include('BOM'));"
+          ] } }]
+        },
+        {
+          "name": "Search returns cities too (lon)",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/places?query=lon"
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "const { places } = pm.response.json();",
+            "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+            "pm.test('Includes the London city code with a city name', () => {",
+            "  const london = places.find((p) => p.iataCode === 'LON');",
+            "  pm.expect(london.type).to.eql('city');",
+            "  pm.expect(london.cityName).to.eql('London');",
+            "});"
+          ] } }]
+        },
+        {
+          "name": "No matches",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/places?query=zzzzqq"
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Status is 200 with an empty list', () => {",
+            "  pm.response.to.have.status(200);",
+            "  pm.expect(pm.response.json().places).to.eql([]);",
+            "});"
+          ] } }]
+        },
+        {
+          "name": "Query too short",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/places?query=a"
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Status is 400', () => pm.response.to.have.status(400));",
+            "pm.test('Flags query', () => pm.expect(pm.response.json().fields).to.have.property('query'));"
+          ] } }]
+        },
+        {
+          "name": "Missing query",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/places"
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Status is 400', () => pm.response.to.have.status(400));"
+          ] } }]
+        },
+        {
+          "name": "City code works in flight search (LON to DEL)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/api/flights/search",
+            "body": { "mode": "raw", "raw": "{\n  \"origin\": \"LON\",\n  \"destination\": \"DEL\",\n  \"departureDate\": \"{{departureDate}}\"\n}" }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+            "pm.test('Offers depart from a London airport', () => {",
+            "  const londonAirports = ['LHR', 'LGW', 'STN', 'LTN', 'LCY', 'SEN', 'BQH'];",
+            "  pm.response.json().offers.forEach((o) => pm.expect(londonAirports).to.include(o.slices[0].origin.iataCode));",
+            "});"
+          ] } }]
+        }
+      ]
+    },
+    {
+      "name": "5. Duffel and routing errors",
       "item": [
         {
           "name": "Unknown airport code (rejected by Duffel)",

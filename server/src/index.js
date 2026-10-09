@@ -1,6 +1,7 @@
 import express from 'express';
 import { DuffelError } from './duffel.js';
 import flightsRouter from './routes/flights.js';
+import placesRouter from './routes/places.js';
 
 const app = express();
 const PORT = Number(process.env.PORT) || 5000;
@@ -12,6 +13,7 @@ app.get('/api/health', (_req, res) => {
 });
 
 app.use('/api/flights', flightsRouter);
+app.use('/api/places', placesRouter);
 
 app.use('/api', (_req, res) => {
   res.status(404).json({ error: 'Not found' });

@@ -2,6 +2,7 @@ const DUFFEL_API_URL = 'https://api.duffel.com';
 const DUFFEL_VERSION = 'v2';
 const REQUEST_TIMEOUT_MS = 30_000;
 const MAX_OFFERS = 50;
+const MAX_PLACE_SUGGESTIONS = 8;
 // Duffel needs an age for child passengers; any value in the 2-11 range prices as a child fare.
 const DEFAULT_CHILD_AGE = 8;
 
@@ -114,4 +115,20 @@ export async function searchFlights(search) {
     .map(toOffer);
 
   return { offerRequestId: data.id, totalOffers: data.offers.length, offers };
+}
+
+export async function suggestPlaces(query) {
+  const { data } = await duffelRequest(`/places/suggestions?query=${encodeURIComponent(query)}`);
+
+  return data
+    .filter((place) => place.iata_code)
+    .slice(0, MAX_PLACE_SUGGESTIONS)
+    .map((place) => ({
+      type: place.type,
+      iataCode: place.iata_code,
+      name: place.name,
+      // City results have no city_name; their own name is the city.
+      cityName: place.city_name || place.name,
+      countryCode: place.iata_country_code,
+    }));
 }
