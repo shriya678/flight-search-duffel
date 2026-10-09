@@ -35,3 +35,42 @@ npm run dev
 
 - Frontend: http://localhost:5173
 - API: http://localhost:5000/api/health
+
+## API
+
+### `POST /api/flights/search`
+
+```json
+{
+  "tripType": "round-trip",
+  "origin": "DEL",
+  "destination": "BOM",
+  "departureDate": "2026-11-10",
+  "returnDate": "2026-11-17",
+  "passengers": { "adults": 1, "children": 0, "infants": 0 },
+  "cabinClass": "economy"
+}
+```
+
+Only `origin`, `destination` and `departureDate` are required. The others default to a one-way trip, 1 adult, economy.
+
+| Status | When |
+| --- | --- |
+| 200 | `{ offerRequestId, totalOffers, offers[] }`: up to 50 offers, cheapest first |
+| 400 | Invalid body: `{ error, fields: { <field>: <message> } }` |
+| 422 | Duffel rejected the search, e.g. an unknown airport code |
+| 502 / 504 | Duffel token is invalid or unreachable / Duffel timed out |
+
+### Postman
+
+Import [`postman/flight-search-duffel.postman_collection.json`](postman/flight-search-duffel.postman_collection.json), start the server, and run the collection with the Collection Runner. Dates are generated automatically.
+
+From the command line:
+
+```bash
+npx newman run postman/flight-search-duffel.postman_collection.json
+```
+
+Browser test cases are in [TESTING.md](TESTING.md).
+
+> In Duffel **test mode**, offers come from simulated airlines (including "Duffel Airways"), so routes, times and prices are not real.
