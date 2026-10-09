@@ -36,6 +36,30 @@ npm run dev
 - Frontend: http://localhost:5173
 - API: http://localhost:5000/api/health
 
+## Deployment (Vercel)
+
+The frontend and backend deploy together as **one Vercel project**:
+
+```
+https://<project>.vercel.app/          → React build (client/dist)
+https://<project>.vercel.app/api/*     → Express app as a serverless function (api/index.js)
+```
+
+Both are on the same domain, so no CORS setup is needed, and the Duffel token is a Vercel environment variable that never reaches the browser.
+
+How it fits together:
+- `server/src/app.js` builds the Express app. `server/src/index.js` starts it locally; `api/index.js` exports it for Vercel.
+- `vercel.json` sets the install/build commands and output folder, and sends all `/api/*` requests to the function.
+- Only the `main` branch deploys (`git.deploymentEnabled`); feature branches and PRs don't create deployments.
+
+Steps (one time):
+1. Go to https://vercel.com/new and import the `flight-search-duffel` GitHub repo.
+2. Leave **Root Directory** as `./` and **Framework Preset** as **Other**. `vercel.json` supplies the build settings.
+3. Under **Environment Variables**, add `DUFFEL_ACCESS_TOKEN` = your `duffel_test_...` token.
+4. Click **Deploy**, then open `https://<project>.vercel.app/api/health` and check `"duffelConfigured": true`.
+
+After that, every merge to `main` redeploys automatically.
+
 ## API
 
 ### `POST /api/flights/search`
