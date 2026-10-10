@@ -10,11 +10,31 @@ const SORTERS = {
   departure: (a, b) => a.slices[0].departingAt.localeCompare(b.slices[0].departingAt),
 };
 
+// Ties (same duration or departure time) fall back to the cheaper offer first.
+const compareBy = (key) => (a, b) => SORTERS[key](a, b) || SORTERS.price(a, b);
+
 const SORT_OPTIONS = [
   { value: 'price', label: 'Cheapest' },
   { value: 'duration', label: 'Fastest' },
   { value: 'departure', label: 'Earliest departure' },
 ];
+
+const BADGES = [
+  { key: 'price', label: 'Cheapest' },
+  { key: 'duration', label: 'Fastest' },
+  { key: 'departure', label: 'Earliest' },
+];
+
+// Maps offer id -> badge labels, e.g. { off_123: ['Cheapest', 'Fastest'] }.
+function findBadges(offers) {
+  const badges = {};
+  if (offers.length < 2) return badges;
+  for (const { key, label } of BADGES) {
+    const best = offers.reduce((top, offer) => (compareBy(key)(offer, top) < 0 ? offer : top));
+    (badges[best.id] ??= []).push(label);
+  }
+  return badges;
+}
 
 function LoadingState() {
   return (
@@ -29,7 +49,8 @@ function LoadingState() {
 export default function FlightResults({ status, result, error, onRetry }) {
   const [sortBy, setSortBy] = useState('price');
 
-  const offers = useMemo(() => [...(result?.offers ?? [])].sort(SORTERS[sortBy]), [result, sortBy]);
+  const offers = useMemo(() => [...(result?.offers ?? [])].sort(compareBy(sortBy)), [result, sortBy]);
+  const badges = useMemo(() => findBadges(result?.offers ?? []), [result]);
 
   if (status === 'idle') return null;
 
@@ -82,7 +103,7 @@ export default function FlightResults({ status, result, error, onRetry }) {
           ))}
           <div className="results-list">
             {offers.map((offer) => (
-              <OfferCard key={offer.id} offer={offer} />
+              <OfferCard key={offer.id} offer={offer} sortBy={sortBy} badges={badges[offer.id]} />
             ))}
           </div>
         </>
