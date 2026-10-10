@@ -103,9 +103,12 @@ Prices are shown in INR, converted from the Duffel account currency (GBP) at the
 | G6 | Find a flight with stops | "1 stop via XXX" with the connecting airport |
 | G7 | Find an overnight flight (arrival next day) | Red "+1" next to the arrival time |
 | G8 | Round Trip LHR → JFK, return a week later | Each card has "Outbound" and "Return" rows; heading says "showing the 50 cheapest" |
-| G9 | Sort by "Fastest" | Cards reorder by total flight time |
-| G10 | Sort by "Earliest departure" | Cards reorder by outbound departure time |
-| G11 | Sort back to "Cheapest" | Cards are in ascending price order |
+| G9 | DEL → BOM, sort by "Fastest" | Cards reorder by total flight time; durations are highlighted in blue |
+| G10 | Sort by "Earliest departure" | Cards reorder by outbound departure time; departure times are highlighted |
+| G11 | Sort back to "Cheapest" | Cards are in ascending price order; prices are highlighted |
+| G11a | Two flights with the same departure time or duration | The cheaper one comes first |
+| G11b | Look at the cards after any search with 2+ results | Green "Cheapest", "Fastest" and "Earliest" badges, each on exactly one card (one card can have several) |
+| G11c | Search a route with few results where one flight is best at everything (e.g. NMI → RPR) | That card shows all three badges, and the order is the same under every sort. This is expected, not a bug. |
 | G12 | 2 adults + 1 child, Business, Search | Prices are higher than for 1 adult economy (price is the total for all passengers) |
 | G13 | Run a second search with a different route | The old results are replaced by loading cards, then the new results |
 | G14 | Resize to mobile width with results shown | Cards stack: airline, then flight rows, then price; no horizontal scroll |
