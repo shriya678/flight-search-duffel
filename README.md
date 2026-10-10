@@ -84,10 +84,12 @@ Only `origin`, `destination` and `departureDate` are required. The others defaul
 
 | Status | When |
 | --- | --- |
-| 200 | `{ offerRequestId, totalOffers, offers[] }`: up to 50 offers, cheapest first |
+| 200 | `{ offerRequestId, totalOffers, offers[], exchangeRates[] }`: up to 50 offers, cheapest first |
 | 400 | Invalid body: `{ error, fields: { <field>: <message> } }` |
 | 422 | Duffel rejected the search, e.g. an unknown airport code |
 | 502 / 504 | Duffel token is invalid or unreachable / Duffel timed out |
+
+**Prices in INR:** Duffel prices offers in the account's currency (GBP for test accounts). The server converts them to `DISPLAY_CURRENCY` (default `INR`) using the daily ECB rate from [Frankfurter](https://frankfurter.dev), cached for 6 hours. Each converted offer keeps `originalAmount` / `originalCurrency`, and `exchangeRates` lists the rate used. If the rates service is down, prices are returned in the original currency and the search still works.
 
 ### `GET /api/places?query=mum`
 

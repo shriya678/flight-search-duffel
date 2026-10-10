@@ -59,7 +59,12 @@ export default function OfferCard({ offer }) {
       </div>
 
       <div className="offer-price">
-        <div className="price">{formatPrice(offer.totalAmount, offer.totalCurrency)}</div>
+        <div
+          className="price"
+          title={offer.originalCurrency && `Original price: ${formatPrice(offer.originalAmount, offer.originalCurrency, 2)}`}
+        >
+          {formatPrice(offer.totalAmount, offer.totalCurrency)}
+        </div>
         <div className="muted price-note">total, all passengers</div>
       </div>
     </article>

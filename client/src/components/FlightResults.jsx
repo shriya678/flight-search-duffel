@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import OfferCard from './OfferCard.jsx';
-import { durationToMinutes } from '../utils/format.js';
+import { durationToMinutes, formatDate, formatPrice } from '../utils/format.js';
 
 const totalMinutes = (offer) => offer.slices.reduce((sum, s) => sum + durationToMinutes(s.duration), 0);
 
@@ -75,6 +75,11 @@ export default function FlightResults({ status, result, error, onRetry }) {
               </select>
             </label>
           </div>
+          {result.exchangeRates?.map(({ from, to, rate, date }) => (
+            <p key={from} className="muted rate-note">
+              Prices converted from {from} at 1 {from} = {formatPrice(rate, to, 2)} (ECB rate, {formatDate(date)})
+            </p>
+          ))}
           <div className="results-list">
             {offers.map((offer) => (
               <OfferCard key={offer.id} offer={offer} />

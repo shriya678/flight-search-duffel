@@ -42,6 +42,11 @@ export function formatStops(stops) {
   return `${stops} stop${stops > 1 ? 's' : ''}`;
 }
 
-export function formatPrice(amount, currency) {
-  return new Intl.NumberFormat('en-IN', { style: 'currency', currency, maximumFractionDigits: 0 }).format(amount);
+export function formatPrice(amount, currency, fractionDigits = 0) {
+  return new Intl.NumberFormat('en-IN', {
+    style: 'currency',
+    currency,
+    minimumFractionDigits: fractionDigits,
+    maximumFractionDigits: fractionDigits,
+  }).format(amount);
 }
