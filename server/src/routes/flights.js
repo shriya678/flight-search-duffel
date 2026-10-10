@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { convertOfferPrices } from '../currency.js';
 import { searchFlights } from '../duffel.js';
 import { validateSearchBody } from '../validation.js';
 
@@ -11,7 +12,7 @@ router.post('/search', async (req, res) => {
   }
 
   const result = await searchFlights(search);
-  res.json(result);
+  res.json(await convertOfferPrices(result));
 });
 
 export default router;

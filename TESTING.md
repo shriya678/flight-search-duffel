@@ -91,7 +91,7 @@ Run `npm run dev` and open http://localhost:5173. Use Chrome DevTools (F12) wher
 
 ### G. Search results
 
-Prices are in your Duffel account's currency (GBP for most test accounts). Airlines are simulated in test mode.
+Prices are shown in INR, converted from the Duffel account currency (GBP) at the daily ECB rate. Airlines are simulated in test mode.
 
 | # | Steps | Expected |
 | --- | --- | --- |
@@ -109,6 +109,9 @@ Prices are in your Duffel account's currency (GBP for most test accounts). Airli
 | G12 | 2 adults + 1 child, Business, Search | Prices are higher than for 1 adult economy (price is the total for all passengers) |
 | G13 | Run a second search with a different route | The old results are replaced by loading cards, then the new results |
 | G14 | Resize to mobile width with results shown | Cards stack: airline, then flight rows, then price; no horizontal scroll |
+| G15 | Look at prices after a search | Shown in rupees with Indian grouping, e.g. "₹8,731" |
+| G16 | Look above the result list | "Prices converted from GBP at 1 GBP = ₹127.89 (ECB rate, …)" |
+| G17 | Hover over a price | Tooltip shows the original price, e.g. "Original price: £68.27" |
 
 ### H. Errors
 
